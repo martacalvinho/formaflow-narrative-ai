@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { v4 as uuidv4 } from "uuid";
+import { Studio, Project, ProjectFile, InstagramAccount, Competitor, ContentStrategy } from "@/types/supabase";
 
 // Studio Services
 export const saveStudioData = async (studioData: {
@@ -42,7 +43,7 @@ export const saveStudioData = async (studioData: {
       .single();
     
     if (error) throw error;
-    return data;
+    return data as Studio;
   } catch (error) {
     console.error("Error saving studio data:", error);
     throw error;
@@ -77,7 +78,7 @@ export const saveProjectData = async (
       .single();
     
     if (error) throw error;
-    return data;
+    return data as Project;
   } catch (error) {
     console.error("Error saving project data:", error);
     throw error;
@@ -116,7 +117,7 @@ export const saveProjectFile = async (
       .single();
     
     if (error) throw error;
-    return data;
+    return data as ProjectFile;
   } catch (error) {
     console.error("Error saving project file:", error);
     throw error;
@@ -151,7 +152,7 @@ export const saveInstagramData = async (
       .single();
     
     if (error) throw error;
-    return data;
+    return data as InstagramAccount;
   } catch (error) {
     console.error("Error saving Instagram data:", error);
     throw error;
@@ -176,7 +177,7 @@ export const saveCompetitorAnalysis = async (
       .single();
     
     if (error) throw error;
-    return data;
+    return data as Competitor;
   } catch (error) {
     console.error("Error saving competitor analysis:", error);
     throw error;
@@ -209,7 +210,7 @@ export const saveContentStrategy = async (
       .single();
     
     if (error) throw error;
-    return data;
+    return data as ContentStrategy;
   } catch (error) {
     console.error("Error saving content strategy:", error);
     throw error;

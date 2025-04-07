@@ -1,19 +1,23 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { ArrowRight, Instagram, Link, BarChart2, Plus, Search } from 'lucide-react';
+import { ArrowRight, Instagram, Plus } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { saveInstagramData, saveCompetitorAnalysis } from '@/services/supabase-service';
+import InstagramConnector from './social/InstagramConnector';
+import InstagramAnalysisProgress from './social/InstagramAnalysisProgress';
+import InstagramStats from './social/InstagramStats';
+import ContentPerformance from './social/ContentPerformance';
+import TopPosts from './social/TopPosts';
+import CompetitorInput from './social/CompetitorInput';
+import CompetitorAnalysis from './social/CompetitorAnalysis';
+import InstagramInsights from './social/InstagramInsights';
 
 interface SocialAnalysisProps {
   onComplete: () => void;
 }
 
-// Mock data for Instagram
 const mockInstagramData = {
   username: 'martacalvinho',
   followers: 24823,
@@ -31,11 +35,9 @@ const mockInstagramData = {
   postTiming: { weekday: 'Thursday', time: '7PM' }
 };
 
-// Mock data for competitors
 const mockCompetitorsData = {
   'zahahadid': {
     followers: 187000,
-    engagement: 4.2,
     postTypes: { images: 45, carousels: 40, videos: 15 },
     topContent: 'Project reveals and in-progress models',
     insights: [
@@ -47,7 +49,6 @@ const mockCompetitorsData = {
   },
   'fosterandpartners': {
     followers: 315000,
-    engagement: 3.8,
     postTypes: { images: 55, carousels: 35, videos: 10 },
     topContent: 'Completed projects and awards',
     insights: [
@@ -59,7 +60,6 @@ const mockCompetitorsData = {
   },
   'big_builds': {
     followers: 98500,
-    engagement: 5.1,
     postTypes: { images: 50, carousels: 25, videos: 25 },
     topContent: 'Innovative concepts and design process',
     insights: [
@@ -70,6 +70,12 @@ const mockCompetitorsData = {
     ]
   }
 };
+
+const defaultInsights = [
+  { text: 'Your audience engages most with architectural process photos rather than just final shots' },
+  { text: 'Carousel posts showing the evolution of a project get 43% more saves than single images' },
+  { text: 'Posts with technical details in captions receive more comments from fellow professionals' }
+];
 
 const SocialAnalysis: React.FC<SocialAnalysisProps> = ({ onComplete }) => {
   const [instagramUsername, setInstagramUsername] = useState('martacalvinho');
@@ -209,142 +215,30 @@ const SocialAnalysis: React.FC<SocialAnalysisProps> = ({ onComplete }) => {
         </div>
         
         {!isConnected ? (
-          <div className="space-y-6">
-            <div className="flex gap-3">
-              <Input
-                value={instagramUsername}
-                onChange={(e) => setInstagramUsername(e.target.value)}
-                placeholder="Your Instagram handle"
-                className="flex-1"
-                disabled={isConnecting}
-              />
-              <Button 
-                onClick={handleConnectInstagram} 
-                className="btn-primary"
-                disabled={isConnecting || !instagramUsername}
-              >
-                {isConnecting ? 'Connecting...' : 'Connect'}
-                <Link className="ml-2 w-4 h-4" />
-              </Button>
-            </div>
-            
-            <div className="flex flex-col items-center justify-center text-center bg-gray-50 rounded-xl p-8 border border-dashed border-gray-200">
-              <Instagram className="w-12 h-12 text-gray-300 mb-4" />
-              <h3 className="text-lg font-medium mb-2">Connect Your Instagram</h3>
-              <p className="text-formaflow-muted-text mb-4">
-                FormaFlow will analyze your content to identify trends, engagement patterns, and optimal posting strategies.
-              </p>
-            </div>
-          </div>
+          <InstagramConnector 
+            instagramUsername={instagramUsername}
+            onUsernameChange={setInstagramUsername}
+            isConnecting={isConnecting}
+            onConnect={handleConnectInstagram}
+          />
         ) : (
           <div>
             {!analysisComplete ? (
-              <div className="space-y-6 py-8">
-                <div className="text-center">
-                  <h3 className="text-lg font-medium mb-2">Analyzing @{instagramUsername}</h3>
-                  <p className="text-formaflow-muted-text mb-4">
-                    AI is processing your Instagram content to identify patterns and opportunities.
-                  </p>
-                </div>
-                
-                <Progress value={analysisProgress} className="h-2" />
-                
-                <div className="grid grid-cols-3 gap-4 text-center">
-                  <div className="p-4 rounded-lg bg-gray-50">
-                    <p className="text-sm text-formaflow-muted-text mb-1">Analyzing Post Types</p>
-                    <p className="font-medium">{analysisProgress >= 30 ? 'Complete' : 'In Progress...'}</p>
-                  </div>
-                  <div className="p-4 rounded-lg bg-gray-50">
-                    <p className="text-sm text-formaflow-muted-text mb-1">Engagement Patterns</p>
-                    <p className="font-medium">{analysisProgress >= 60 ? 'Complete' : 'In Progress...'}</p>
-                  </div>
-                  <div className="p-4 rounded-lg bg-gray-50">
-                    <p className="text-sm text-formaflow-muted-text mb-1">Content Analysis</p>
-                    <p className="font-medium">{analysisProgress >= 90 ? 'Complete' : 'In Progress...'}</p>
-                  </div>
-                </div>
-              </div>
+              <InstagramAnalysisProgress 
+                analysisProgress={analysisProgress}
+                username={instagramUsername}
+              />
             ) : (
               <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-lg">Followers</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-3xl font-bold">{instagramData.followers.toLocaleString()}</p>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-lg">Posts</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-3xl font-bold">{instagramData.posts}</p>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-lg">Avg. Engagement</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-3xl font-bold">{instagramData.engagement}%</p>
-                    </CardContent>
-                  </Card>
-                </div>
+                <InstagramStats 
+                  followers={instagramData.followers}
+                  posts={instagramData.posts}
+                  engagement={instagramData.engagement}
+                />
                 
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Content Performance</CardTitle>
-                    <CardDescription>Your best performing content by format</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div>
-                        <div className="flex justify-between mb-1">
-                          <span className="text-sm">Images</span>
-                          <span className="text-sm font-medium">{instagramData.postTypes.images}%</span>
-                        </div>
-                        <Progress value={instagramData.postTypes.images} className="h-2" />
-                      </div>
-                      
-                      <div>
-                        <div className="flex justify-between mb-1">
-                          <span className="text-sm">Carousels</span>
-                          <span className="text-sm font-medium">{instagramData.postTypes.carousels}%</span>
-                        </div>
-                        <Progress value={instagramData.postTypes.carousels} className="h-2" />
-                      </div>
-                      
-                      <div>
-                        <div className="flex justify-between mb-1">
-                          <span className="text-sm">Videos</span>
-                          <span className="text-sm font-medium">{instagramData.postTypes.videos}%</span>
-                        </div>
-                        <Progress value={instagramData.postTypes.videos} className="h-2" />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                <ContentPerformance postTypes={instagramData.postTypes} />
                 
-                <div>
-                  <h3 className="text-lg font-medium mb-3">Top Performing Posts</h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    {instagramData.topPosts.map(post => (
-                      <div key={post.id} className="aspect-square rounded-lg overflow-hidden relative group">
-                        <img src={post.imageUrl} alt="Instagram post" className="w-full h-full object-cover" />
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
-                          <div className="text-center">
-                            <p className="text-sm font-bold">{post.likes} likes</p>
-                            <p className="text-xs">{post.comments} comments</p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <TopPosts posts={instagramData.topPosts} />
                 
                 {/* Competitor Analysis Section */}
                 <Card className="mt-8">
@@ -368,89 +262,23 @@ const SocialAnalysis: React.FC<SocialAnalysisProps> = ({ onComplete }) => {
                   </CardHeader>
                   <CardContent>
                     {showCompetitorInput ? (
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="competitor1">Competitor 1 Instagram Handle</Label>
-                          <Input
-                            id="competitor1"
-                            value={competitor1}
-                            onChange={(e) => setCompetitor1(e.target.value)}
-                            placeholder="e.g., zahahadid"
-                            disabled={analyzingCompetitors}
-                          />
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <Label htmlFor="competitor2">Competitor 2 Instagram Handle</Label>
-                          <Input
-                            id="competitor2"
-                            value={competitor2}
-                            onChange={(e) => setCompetitor2(e.target.value)}
-                            placeholder="e.g., fosterandpartners"
-                            disabled={analyzingCompetitors}
-                          />
-                        </div>
-                        
-                        <div className="flex gap-2">
-                          <Button 
-                            onClick={handleAnalyzeCompetitors} 
-                            className="btn-primary"
-                            disabled={analyzingCompetitors || (!competitor1 && !competitor2)}
-                          >
-                            {analyzingCompetitors ? 'Analyzing...' : 'Analyze Competitors'}
-                            <Search className="ml-2 w-4 h-4" />
-                          </Button>
-                          
-                          <Button 
-                            onClick={() => setShowCompetitorInput(false)} 
-                            variant="outline"
-                            disabled={analyzingCompetitors}
-                          >
-                            Cancel
-                          </Button>
-                        </div>
-                      </div>
+                      <CompetitorInput 
+                        competitor1={competitor1}
+                        competitor2={competitor2}
+                        onCompetitor1Change={setCompetitor1}
+                        onCompetitor2Change={setCompetitor2}
+                        analyzingCompetitors={analyzingCompetitors}
+                        onAnalyze={handleAnalyzeCompetitors}
+                        onCancel={() => setShowCompetitorInput(false)}
+                      />
                     ) : competitorsAnalyzed.length > 0 ? (
                       <div className="space-y-6">
                         {competitorsAnalyzed.map(competitor => (
-                          <div key={competitor} className="border rounded-lg p-4">
-                            <div className="flex items-center justify-between mb-4">
-                              <h3 className="font-semibold">@{competitor}</h3>
-                              <div className="text-sm text-gray-500">
-                                {competitorsData[competitor]?.followers.toLocaleString()} followers
-                              </div>
-                            </div>
-                            
-                            <div className="mb-4">
-                              <h4 className="text-sm font-medium mb-2">Content Mix</h4>
-                              <div className="grid grid-cols-3 gap-2 text-center text-sm">
-                                <div className="bg-gray-50 p-2 rounded">
-                                  <p className="font-bold">{competitorsData[competitor]?.postTypes.images}%</p>
-                                  <p className="text-xs text-gray-500">Images</p>
-                                </div>
-                                <div className="bg-gray-50 p-2 rounded">
-                                  <p className="font-bold">{competitorsData[competitor]?.postTypes.carousels}%</p>
-                                  <p className="text-xs text-gray-500">Carousels</p>
-                                </div>
-                                <div className="bg-gray-50 p-2 rounded">
-                                  <p className="font-bold">{competitorsData[competitor]?.postTypes.videos}%</p>
-                                  <p className="text-xs text-gray-500">Videos</p>
-                                </div>
-                              </div>
-                            </div>
-                            
-                            <div>
-                              <h4 className="text-sm font-medium mb-2">Key Insights</h4>
-                              <ul className="space-y-1 text-sm">
-                                {competitorsData[competitor]?.insights.map((insight: string, index: number) => (
-                                  <li key={index} className="flex items-start gap-2">
-                                    <div className="w-1 h-1 rounded-full bg-formaflow-purple mt-2" />
-                                    <p>{insight}</p>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          </div>
+                          <CompetitorAnalysis 
+                            key={competitor}
+                            competitor={competitor}
+                            data={competitorsData[competitor]}
+                          />
                         ))}
                       </div>
                     ) : (
@@ -476,37 +304,10 @@ const SocialAnalysis: React.FC<SocialAnalysisProps> = ({ onComplete }) => {
         )}
       </div>
       
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BarChart2 className="w-5 h-5" />
-            <span>Instagram Insights</span>
-          </CardTitle>
-          <CardDescription>
-            FormaFlow analyzes your existing content to improve your new strategy
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ul className="space-y-2 text-sm">
-            <li className="flex items-start gap-2">
-              <div className="w-1 h-1 rounded-full bg-formaflow-purple mt-2" />
-              <p>Your audience engages most with architectural process photos rather than just final shots</p>
-            </li>
-            <li className="flex items-start gap-2">
-              <div className="w-1 h-1 rounded-full bg-formaflow-purple mt-2" />
-              <p>Carousel posts showing the evolution of a project get 43% more saves than single images</p>
-            </li>
-            <li className="flex items-start gap-2">
-              <div className="w-1 h-1 rounded-full bg-formaflow-purple mt-2" />
-              <p>Posts with technical details in captions receive more comments from fellow professionals</p>
-            </li>
-            <li className="flex items-start gap-2">
-              <div className="w-1 h-1 rounded-full bg-formaflow-purple mt-2" />
-              <p>Optimal posting time based on your audience is {isConnected ? instagramData.postTiming.weekday : 'Thursday'} at {isConnected ? instagramData.postTiming.time : '7PM'}</p>
-            </li>
-          </ul>
-        </CardContent>
-      </Card>
+      <InstagramInsights 
+        insights={defaultInsights}
+        postingTime={isConnected ? instagramData.postTiming : { weekday: 'Thursday', time: '7PM' }}
+      />
     </div>
   );
 };

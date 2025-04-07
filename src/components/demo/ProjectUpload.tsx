@@ -11,6 +11,7 @@ import FileUploader from './project/FileUploader';
 import ProjectTimeline from './project/ProjectTimeline';
 import { saveProjectData, saveProjectFile } from '@/services/supabase-service';
 import { Pencil, ImageIcon, LayoutPanelLeft, Construction, Camera } from 'lucide-react';
+import { Studio, Project } from '@/types/supabase';
 
 interface ProjectUploadProps {
   studioName: string;
@@ -47,21 +48,25 @@ const ProjectUpload: React.FC<ProjectUploadProps> = ({ studioName, onComplete })
   // Get the studio ID when the component mounts
   useEffect(() => {
     const getStudioId = async () => {
-      const { data, error } = await supabase
-        .from('studios')
-        .select('id')
-        .eq('name', studioName)
-        .single();
-      
-      if (data) {
-        setStudioId(data.id);
-      } else if (error) {
-        console.error("Error fetching studio:", error);
-        toast({
-          title: "Error",
-          description: "Could not find the studio information",
-          variant: "destructive"
-        });
+      try {
+        const { data, error } = await supabase
+          .from('studios')
+          .select('id')
+          .eq('name', studioName)
+          .single();
+        
+        if (data) {
+          setStudioId((data as Studio).id);
+        } else if (error) {
+          console.error("Error fetching studio:", error);
+          toast({
+            title: "Error",
+            description: "Could not find the studio information",
+            variant: "destructive"
+          });
+        }
+      } catch (error) {
+        console.error("Error in getStudioId:", error);
       }
     };
     

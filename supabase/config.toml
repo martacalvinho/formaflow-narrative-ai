@@ -3,3 +3,12 @@ project_id = "vfvtbltkthzezivccwiw"
 
 [functions.analyze-instagram]
 verify_jwt = false
+
+[functions.instagram-api]
+verify_jwt = false
+
+[functions.pinterest-api]
+verify_jwt = false
+
+[functions.ai-strategy]
+verify_jwt = false
