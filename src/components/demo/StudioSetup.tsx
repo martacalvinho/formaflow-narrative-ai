@@ -20,6 +20,7 @@ const StudioSetup: React.FC<StudioSetupProps> = ({ onComplete }) => {
   const [studioName, setStudioName] = useState('');
   const [website, setWebsite] = useState('');
   const [style, setStyle] = useState('minimalist');
+  const [customStyle, setCustomStyle] = useState('');
   const [logo, setLogo] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const { toast } = useToast();
@@ -44,10 +45,13 @@ const StudioSetup: React.FC<StudioSetupProps> = ({ onComplete }) => {
       return;
     }
 
+    // If "other" is selected, use the custom style value
+    const finalStyle = style === 'other' ? customStyle : style;
+
     onComplete({
       name: studioName,
       website,
-      style,
+      style: finalStyle,
       logo
     });
   };
@@ -83,7 +87,7 @@ const StudioSetup: React.FC<StudioSetupProps> = ({ onComplete }) => {
           
           <div className="space-y-2">
             <Label>Studio Style</Label>
-            <RadioGroup value={style} onValueChange={setStyle} className="grid grid-cols-3 gap-4 pt-2">
+            <RadioGroup value={style} onValueChange={setStyle} className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
               <div className="flex flex-col items-center space-y-2">
                 <div className={`border-2 p-4 rounded-lg cursor-pointer transition ${style === 'minimalist' ? 'border-formaflow-purple bg-formaflow-purple/10' : 'border-gray-200'}`}>
                   <Label htmlFor="minimalist" className="cursor-pointer flex flex-col items-center">
@@ -110,7 +114,29 @@ const StudioSetup: React.FC<StudioSetupProps> = ({ onComplete }) => {
                   </Label>
                 </div>
               </div>
+
+              <div className="flex flex-col items-center space-y-2">
+                <div className={`border-2 p-4 rounded-lg cursor-pointer transition ${style === 'other' ? 'border-formaflow-purple bg-formaflow-purple/10' : 'border-gray-200'}`}>
+                  <Label htmlFor="other" className="cursor-pointer flex flex-col items-center">
+                    <RadioGroupItem id="other" value="other" className="sr-only" />
+                    <span className="text-sm font-medium">Other</span>
+                  </Label>
+                </div>
+              </div>
             </RadioGroup>
+
+            {style === 'other' && (
+              <div className="mt-4">
+                <Label htmlFor="customStyle">Specify your style</Label>
+                <Input 
+                  id="customStyle" 
+                  value={customStyle}
+                  onChange={(e) => setCustomStyle(e.target.value)}
+                  placeholder="e.g., Scandinavian Modern" 
+                  className="mt-2"
+                />
+              </div>
+            )}
           </div>
           
           <div className="space-y-2">

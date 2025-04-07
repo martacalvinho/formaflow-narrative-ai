@@ -9,10 +9,13 @@ import {
   Pencil, 
   LayoutPanelLeft, 
   Construction, 
-  Camera 
+  Camera,
+  Info
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import ProjectDetails from './ProjectDetails';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface ProjectUploadProps {
   studioName: string;
@@ -32,6 +35,7 @@ const ProjectUpload: React.FC<ProjectUploadProps> = ({ studioName, onComplete })
   const [projectName, setProjectName] = useState('Urban Loft Conversion');
   const [currentPhase, setCurrentPhase] = useState<ProjectPhase>('concept');
   const [files, setFiles] = useState<ProjectFile[]>([]);
+  const [showDetails, setShowDetails] = useState(false);
   const { toast } = useToast();
 
   const phases = [
@@ -78,6 +82,14 @@ const ProjectUpload: React.FC<ProjectUploadProps> = ({ studioName, onComplete })
     onComplete();
   };
 
+  const handleSaveDetails = () => {
+    setShowDetails(false);
+    toast({
+      title: "Project details saved",
+      description: "Your project information has been updated"
+    });
+  };
+
   return (
     <div className="max-w-4xl mx-auto">
       <div className="glass-card p-8 rounded-2xl mb-8">
@@ -89,15 +101,27 @@ const ProjectUpload: React.FC<ProjectUploadProps> = ({ studioName, onComplete })
           </div>
         </div>
         
-        <div className="mb-8">
+        <Collapsible open={showDetails} onOpenChange={setShowDetails} className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-semibold">{projectName}</h3>
-            <Button variant="ghost" size="sm" className="flex items-center gap-1">
-              <Pencil className="w-3 h-3" />
-              <span>Edit</span>
-            </Button>
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" size="sm" className="flex items-center gap-1">
+                <Info className="w-4 h-4" />
+                <span>{showDetails ? "Hide Details" : "Project Details"}</span>
+              </Button>
+            </CollapsibleTrigger>
           </div>
           
+          <CollapsibleContent className="border border-gray-100 rounded-xl p-6 bg-white shadow-sm mt-4">
+            <ProjectDetails 
+              projectName={projectName} 
+              setProjectName={setProjectName} 
+              onSave={handleSaveDetails} 
+            />
+          </CollapsibleContent>
+        </Collapsible>
+          
+        <div className="mb-8">
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
             {phases.map((phase) => (
               <Button
