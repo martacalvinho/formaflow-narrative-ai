@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,28 +10,40 @@ import { Upload, FileText } from 'lucide-react';
 interface ProjectDetailsProps {
   projectName: string;
   setProjectName: (name: string) => void;
+  location: string;
+  setLocation: (location: string) => void;
+  client: string;
+  setClient: (client: string) => void;
+  concept: string;
+  setConcept: (concept: string) => void;
+  stage: string;
+  setStage: (stage: string) => void;
+  materials: string;
+  setMaterials: (materials: string) => void;
+  docName: string | null;
+  handleDocumentUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSave: () => void;
+  isSaving: boolean;
 }
 
 const ProjectDetails: React.FC<ProjectDetailsProps> = ({ 
   projectName, 
-  setProjectName, 
-  onSave 
+  setProjectName,
+  location,
+  setLocation,
+  client,
+  setClient,
+  concept,
+  setConcept,
+  stage,
+  setStage,
+  materials,
+  setMaterials,
+  docName,
+  handleDocumentUpload,
+  onSave,
+  isSaving
 }) => {
-  const [location, setLocation] = useState('');
-  const [client, setClient] = useState('');
-  const [concept, setConcept] = useState('');
-  const [stage, setStage] = useState('concept');
-  const [materials, setMaterials] = useState('');
-  const [docName, setDocName] = useState<string | null>(null);
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setDocName(e.target.files[0].name);
-      // In a real app, we would upload this file to storage
-    }
-  };
-
   return (
     <div className="space-y-6">
       <div className="space-y-2">
@@ -118,7 +130,7 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({
               id="doc-upload"
               accept=".pdf,.doc,.docx,.txt"
               className="hidden"
-              onChange={handleFileUpload}
+              onChange={handleDocumentUpload}
             />
           </Label>
           {docName && (
@@ -131,8 +143,12 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({
         <p className="text-xs text-gray-500">Upload any existing project description document</p>
       </div>
 
-      <Button onClick={onSave} className="w-full btn-primary">
-        Save Project Details
+      <Button 
+        onClick={onSave} 
+        className="w-full btn-primary"
+        disabled={isSaving}
+      >
+        {isSaving ? "Saving..." : "Save Project Details"}
       </Button>
     </div>
   );

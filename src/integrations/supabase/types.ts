@@ -9,7 +9,228 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      competitors: {
+        Row: {
+          competitor_username: string
+          created_at: string
+          id: string
+          insights: Json | null
+          instagram_account_id: string
+        }
+        Insert: {
+          competitor_username: string
+          created_at?: string
+          id?: string
+          insights?: Json | null
+          instagram_account_id: string
+        }
+        Update: {
+          competitor_username?: string
+          created_at?: string
+          id?: string
+          insights?: Json | null
+          instagram_account_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competitors_instagram_account_id_fkey"
+            columns: ["instagram_account_id"]
+            isOneToOne: false
+            referencedRelation: "instagram_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_strategies: {
+        Row: {
+          calendar: Json | null
+          captions: Json | null
+          created_at: string
+          formats: Json | null
+          id: string
+          instagram_account_id: string | null
+          project_id: string
+          themes: Json | null
+        }
+        Insert: {
+          calendar?: Json | null
+          captions?: Json | null
+          created_at?: string
+          formats?: Json | null
+          id?: string
+          instagram_account_id?: string | null
+          project_id: string
+          themes?: Json | null
+        }
+        Update: {
+          calendar?: Json | null
+          captions?: Json | null
+          created_at?: string
+          formats?: Json | null
+          id?: string
+          instagram_account_id?: string | null
+          project_id?: string
+          themes?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_strategies_instagram_account_id_fkey"
+            columns: ["instagram_account_id"]
+            isOneToOne: false
+            referencedRelation: "instagram_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_strategies_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      instagram_accounts: {
+        Row: {
+          created_at: string
+          engagement: number | null
+          followers: number | null
+          id: string
+          post_timing: Json | null
+          post_types: Json | null
+          posts: number | null
+          top_posts: Json | null
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          engagement?: number | null
+          followers?: number | null
+          id?: string
+          post_timing?: Json | null
+          post_types?: Json | null
+          posts?: number | null
+          top_posts?: Json | null
+          username: string
+        }
+        Update: {
+          created_at?: string
+          engagement?: number | null
+          followers?: number | null
+          id?: string
+          post_timing?: Json | null
+          post_types?: Json | null
+          posts?: number | null
+          top_posts?: Json | null
+          username?: string
+        }
+        Relationships: []
+      }
+      project_files: {
+        Row: {
+          created_at: string
+          file_name: string
+          file_url: string
+          id: string
+          phase: string
+          project_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          file_url: string
+          id?: string
+          phase: string
+          project_id: string
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          file_url?: string
+          id?: string
+          phase?: string
+          project_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_files_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projects: {
+        Row: {
+          client: string | null
+          concept: string | null
+          created_at: string
+          id: string
+          location: string | null
+          materials: string | null
+          name: string
+          stage: string
+          studio_id: string
+        }
+        Insert: {
+          client?: string | null
+          concept?: string | null
+          created_at?: string
+          id?: string
+          location?: string | null
+          materials?: string | null
+          name: string
+          stage: string
+          studio_id: string
+        }
+        Update: {
+          client?: string | null
+          concept?: string | null
+          created_at?: string
+          id?: string
+          location?: string | null
+          materials?: string | null
+          name?: string
+          stage?: string
+          studio_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_studio_id_fkey"
+            columns: ["studio_id"]
+            isOneToOne: false
+            referencedRelation: "studios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      studios: {
+        Row: {
+          created_at: string
+          id: string
+          logo_url: string | null
+          name: string
+          style: string | null
+          website: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          name: string
+          style?: string | null
+          website?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          name?: string
+          style?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
