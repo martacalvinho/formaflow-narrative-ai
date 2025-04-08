@@ -113,7 +113,7 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({
           <SelectContent>
             <SelectItem value="concept">Concept</SelectItem>
             <SelectItem value="inspiration">Inspiration</SelectItem>
-            <SelectItem value="sketches">Sketches</SelectItem>
+            <SelectItem value="sketches">Sketches / Renders</SelectItem>
             <SelectItem value="drawings">Design Drawings</SelectItem>
             <SelectItem value="construction">Construction</SelectItem>
             <SelectItem value="final">Final Photography</SelectItem>

@@ -57,7 +57,7 @@ const ProjectUpload: React.FC<ProjectUploadProps> = ({ studioName, onComplete })
           .eq('name', studioName);
         
         if (queryError) {
-          console.error("Error querying studios:", queryError);
+          console.error("Error fetching studio:", queryError);
           throw queryError;
         }
         
@@ -102,7 +102,7 @@ const ProjectUpload: React.FC<ProjectUploadProps> = ({ studioName, onComplete })
   const phases = [
     { id: 'concept', name: 'Concept', icon: <Pencil className="w-5 h-5" /> },
     { id: 'inspiration', name: 'Inspiration', icon: <ImageIcon className="w-5 h-5" /> },
-    { id: 'sketches', name: 'Sketches', icon: <Pencil className="w-5 h-5" /> },
+    { id: 'sketches', name: 'Sketches / Renders', icon: <Pencil className="w-5 h-5" /> },
     { id: 'drawings', name: 'Design Drawings', icon: <LayoutPanelLeft className="w-5 h-5" /> },
     { id: 'construction', name: 'Construction', icon: <Construction className="w-5 h-5" /> },
     { id: 'final', name: 'Final Photography', icon: <Camera className="w-5 h-5" /> },
@@ -149,7 +149,7 @@ const ProjectUpload: React.FC<ProjectUploadProps> = ({ studioName, onComplete })
         toast({
           title: "Upload limit reached",
           description: `${e.target.files.length - filesToAdd.length} files were not added due to the 10 image limit per phase.`,
-          variant: "warning"
+          variant: "default"
         });
       }
     }

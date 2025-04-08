@@ -169,6 +169,7 @@ export type Database = {
           location: string | null
           materials: string | null
           name: string
+          project_type: string | null
           stage: string
           studio_id: string
         }
@@ -180,6 +181,7 @@ export type Database = {
           location?: string | null
           materials?: string | null
           name: string
+          project_type?: string | null
           stage: string
           studio_id: string
         }
@@ -191,6 +193,7 @@ export type Database = {
           location?: string | null
           materials?: string | null
           name?: string
+          project_type?: string | null
           stage?: string
           studio_id?: string
         }
