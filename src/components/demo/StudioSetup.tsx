@@ -1,11 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ArrowRight, Building2, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { saveStudioData, getDemoPin } from '@/services/supabase-service';
 
 interface StudioSetupProps {
   onComplete: (data: {
@@ -14,16 +15,28 @@ interface StudioSetupProps {
     style: string;
     logo: File | null;
   }) => void;
+  demoPin?: string;
 }
 
-const StudioSetup: React.FC<StudioSetupProps> = ({ onComplete }) => {
+const StudioSetup: React.FC<StudioSetupProps> = ({ onComplete, demoPin }) => {
   const [studioName, setStudioName] = useState('');
   const [website, setWebsite] = useState('');
   const [style, setStyle] = useState('minimalist');
   const [customStyle, setCustomStyle] = useState('');
   const [logo, setLogo] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [currentDemoPin, setCurrentDemoPin] = useState(demoPin || '');
   const { toast } = useToast();
+
+  // Get or initialize demo PIN
+  useEffect(() => {
+    if (!currentDemoPin) {
+      const pin = getDemoPin();
+      setCurrentDemoPin(pin);
+      console.log(`Studio setup using demo PIN: ${pin}`);
+    }
+  }, [currentDemoPin]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -33,7 +46,7 @@ const StudioSetup: React.FC<StudioSetupProps> = ({ onComplete }) => {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!studioName) {
@@ -47,13 +60,39 @@ const StudioSetup: React.FC<StudioSetupProps> = ({ onComplete }) => {
 
     // If "other" is selected, use the custom style value
     const finalStyle = style === 'other' ? customStyle : style;
-
-    onComplete({
-      name: studioName,
-      website,
-      style: finalStyle,
-      logo
-    });
+    
+    setIsSaving(true);
+    
+    try {
+      // Save to Supabase
+      await saveStudioData({
+        name: studioName,
+        website,
+        style: finalStyle,
+        logo
+      });
+      
+      toast({
+        title: "Studio saved",
+        description: "Your studio information has been saved",
+      });
+      
+      onComplete({
+        name: studioName,
+        website,
+        style: finalStyle,
+        logo
+      });
+    } catch (error: any) {
+      console.error("Error saving studio:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save studio: " + error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -63,6 +102,14 @@ const StudioSetup: React.FC<StudioSetupProps> = ({ onComplete }) => {
           <Building2 className="w-8 h-8 text-formaflow-purple" />
           <h2 className="text-2xl font-bold">Set Up Your Studio</h2>
         </div>
+        
+        {currentDemoPin && (
+          <div className="mb-6 p-3 bg-formaflow-purple/10 rounded-lg">
+            <p className="text-sm">
+              Demo session PIN: <span className="font-bold">{currentDemoPin}</span>
+            </p>
+          </div>
+        )}
         
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
@@ -169,9 +216,13 @@ const StudioSetup: React.FC<StudioSetupProps> = ({ onComplete }) => {
             </div>
           </div>
           
-          <Button type="submit" className="btn-primary w-full mt-8">
-            Continue to Project Upload
-            <ArrowRight className="ml-2 w-4 h-4" />
+          <Button 
+            type="submit" 
+            className="btn-primary w-full mt-8"
+            disabled={isSaving}
+          >
+            {isSaving ? "Saving..." : "Continue to Project Upload"}
+            {!isSaving && <ArrowRight className="ml-2 w-4 h-4" />}
           </Button>
         </form>
       </div>

@@ -7,6 +7,7 @@ export interface Studio {
   style: string;
   logo_url?: string;
   created_at: string;
+  demo_pin?: string; // Added demo_pin for tracking demo sessions
 }
 
 export interface Project {
@@ -18,8 +19,9 @@ export interface Project {
   concept?: string;
   stage: string;
   materials?: string;
-  project_type?: string; // Added project type field
+  project_type?: string;
   created_at: string;
+  demo_pin?: string; // Added demo_pin for tracking demo sessions
 }
 
 export interface ProjectFile {
@@ -41,6 +43,7 @@ export interface InstagramAccount {
   post_types?: any;
   post_timing?: any;
   created_at: string;
+  demo_pin?: string; // Added demo_pin for tracking demo sessions
 }
 
 export interface Competitor {
@@ -60,4 +63,5 @@ export interface ContentStrategy {
   formats?: any;
   themes?: any;
   created_at: string;
+  demo_pin?: string; // Added demo_pin for tracking demo sessions
 }
