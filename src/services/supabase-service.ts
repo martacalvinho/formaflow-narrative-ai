@@ -30,20 +30,45 @@ export const saveStudioData = async (studioData: {
       logoUrl = publicUrl;
     }
     
-    // Save studio data
-    const { data, error } = await supabase
+    // Check if studio already exists by name
+    const { data: existingStudios, error: queryError } = await supabase
       .from('studios')
-      .insert({
-        name: studioData.name,
-        website: studioData.website || null,
-        style: studioData.style,
-        logo_url: logoUrl
-      })
-      .select()
-      .single();
+      .select('*')
+      .eq('name', studioData.name);
     
-    if (error) throw error;
-    return data as Studio;
+    if (queryError) throw queryError;
+    
+    if (existingStudios && existingStudios.length > 0) {
+      // Update existing studio
+      const { data, error } = await supabase
+        .from('studios')
+        .update({
+          website: studioData.website || existingStudios[0].website,
+          style: studioData.style || existingStudios[0].style,
+          logo_url: logoUrl || existingStudios[0].logo_url
+        })
+        .eq('id', existingStudios[0].id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data as Studio;
+    } else {
+      // Create new studio
+      const { data, error } = await supabase
+        .from('studios')
+        .insert({
+          name: studioData.name,
+          website: studioData.website || null,
+          style: studioData.style,
+          logo_url: logoUrl
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data as Studio;
+    }
   } catch (error) {
     console.error("Error saving studio data:", error);
     throw error;
@@ -60,27 +85,68 @@ export const saveProjectData = async (
     concept?: string;
     stage: string;
     materials?: string;
-    project_type?: string; // Added project type parameter
+    project_type?: string;
   }
 ) => {
   try {
-    const { data, error } = await supabase
+    // Check if a project with this name already exists for this studio
+    const { data: existingProjects, error: queryError } = await supabase
       .from('projects')
-      .insert({
-        studio_id: studioId,
-        name: projectData.name,
-        location: projectData.location || null,
-        client: projectData.client || null,
-        concept: projectData.concept || null,
-        stage: projectData.stage,
-        materials: projectData.materials || null,
-        project_type: projectData.project_type || 'residential' // Add default if not provided
-      })
-      .select()
-      .single();
+      .select('*')
+      .eq('studio_id', studioId)
+      .eq('name', projectData.name);
     
-    if (error) throw error;
-    return data as Project;
+    if (queryError) {
+      console.error("Error checking for existing project:", queryError);
+      throw queryError;
+    }
+    
+    if (existingProjects && existingProjects.length > 0) {
+      // Update existing project
+      const { data, error } = await supabase
+        .from('projects')
+        .update({
+          location: projectData.location || existingProjects[0].location,
+          client: projectData.client || existingProjects[0].client,
+          concept: projectData.concept || existingProjects[0].concept,
+          stage: projectData.stage,
+          materials: projectData.materials || existingProjects[0].materials,
+          project_type: projectData.project_type || existingProjects[0].project_type || 'residential'
+        })
+        .eq('id', existingProjects[0].id)
+        .select()
+        .single();
+      
+      if (error) {
+        console.error("Error updating project:", error);
+        throw error;
+      }
+      
+      return data as Project;
+    } else {
+      // Create new project
+      const { data, error } = await supabase
+        .from('projects')
+        .insert({
+          studio_id: studioId,
+          name: projectData.name,
+          location: projectData.location || null,
+          client: projectData.client || null,
+          concept: projectData.concept || null,
+          stage: projectData.stage,
+          materials: projectData.materials || null,
+          project_type: projectData.project_type || 'residential'
+        })
+        .select()
+        .single();
+      
+      if (error) {
+        console.error("Error creating project:", error);
+        throw error;
+      }
+      
+      return data as Project;
+    }
   } catch (error) {
     console.error("Error saving project data:", error);
     throw error;
