@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Folder, Info } from 'lucide-react';
+import { ArrowRight, Folder, Info, Edit } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { supabase } from '@/integrations/supabase/client';
@@ -38,6 +38,7 @@ const ProjectUpload: React.FC<ProjectUploadProps> = ({ studioName, onComplete })
   const [concept, setConcept] = useState('');
   const [stage, setStage] = useState('concept');
   const [materials, setMaterials] = useState('');
+  const [projectType, setProjectType] = useState('residential'); // Added project type state
   const [docName, setDocName] = useState<string | null>(null);
   const [docFile, setDocFile] = useState<File | null>(null);
   const [studioId, setStudioId] = useState<string | null>(null);
@@ -49,24 +50,47 @@ const ProjectUpload: React.FC<ProjectUploadProps> = ({ studioName, onComplete })
   useEffect(() => {
     const getStudioId = async () => {
       try {
-        const { data, error } = await supabase
+        // Create a demo studio if one doesn't exist with this name
+        const { data: existingStudios, error: queryError } = await supabase
           .from('studios')
           .select('id')
-          .eq('name', studioName)
-          .single();
+          .eq('name', studioName);
         
-        if (data) {
-          setStudioId((data as Studio).id);
-        } else if (error) {
-          console.error("Error fetching studio:", error);
-          toast({
-            title: "Error",
-            description: "Could not find the studio information",
-            variant: "destructive"
-          });
+        if (queryError) {
+          console.error("Error querying studios:", queryError);
+          throw queryError;
+        }
+        
+        if (existingStudios && existingStudios.length > 0) {
+          setStudioId(existingStudios[0].id);
+        } else {
+          // No studio found, create a demo one
+          const { data: newStudio, error: insertError } = await supabase
+            .from('studios')
+            .insert({
+              name: studioName,
+              style: 'minimalist',
+              website: 'https://example.com'
+            })
+            .select()
+            .single();
+          
+          if (insertError) {
+            console.error("Error creating studio:", insertError);
+            throw insertError;
+          }
+          
+          if (newStudio) {
+            setStudioId(newStudio.id);
+          }
         }
       } catch (error) {
         console.error("Error in getStudioId:", error);
+        toast({
+          title: "Error",
+          description: "Could not find or create the studio information. Please try again.",
+          variant: "destructive"
+        });
       }
     };
     
@@ -86,7 +110,26 @@ const ProjectUpload: React.FC<ProjectUploadProps> = ({ studioName, onComplete })
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      const newFiles = Array.from(e.target.files).map(file => ({
+      // Get current files for this phase
+      const currentPhaseFiles = files.filter(file => file.phase === currentPhase);
+      
+      // Check if adding more files would exceed the limit
+      if (currentPhaseFiles.length >= 10) {
+        toast({
+          title: "Upload limit reached",
+          description: `You can only upload a maximum of 10 images per phase.`,
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Calculate how many more files we can add
+      const remainingSlots = 10 - currentPhaseFiles.length;
+      const filesToAdd = Array.from(e.target.files).slice(0, remainingSlots);
+      
+      if (filesToAdd.length === 0) return;
+      
+      const newFiles = filesToAdd.map(file => ({
         id: Math.random().toString(36).substr(2, 9),
         name: file.name,
         phase: currentPhase,
@@ -100,6 +143,15 @@ const ProjectUpload: React.FC<ProjectUploadProps> = ({ studioName, onComplete })
         title: "Files uploaded",
         description: `${newFiles.length} files added to ${phases.find(p => p.id === currentPhase)?.name} phase`
       });
+      
+      // Warn if some files were not added due to the limit
+      if (filesToAdd.length < e.target.files.length) {
+        toast({
+          title: "Upload limit reached",
+          description: `${e.target.files.length - filesToAdd.length} files were not added due to the 10 image limit per phase.`,
+          variant: "warning"
+        });
+      }
     }
   };
 
@@ -135,7 +187,8 @@ const ProjectUpload: React.FC<ProjectUploadProps> = ({ studioName, onComplete })
         client,
         concept,
         stage,
-        materials
+        materials,
+        project_type: projectType // Added project type
       });
       
       if (projectData) {
@@ -179,16 +232,19 @@ const ProjectUpload: React.FC<ProjectUploadProps> = ({ studioName, onComplete })
       return;
     }
     
-    // If project details haven't been saved yet, save them
-    if (!projectId && studioId) {
-      try {
+    setIsSaving(true);
+    
+    try {
+      // If project details haven't been saved yet, save them
+      if (!projectId && studioId) {
         const projectData = await saveProjectData(studioId, {
           name: projectName,
           location,
           client,
           concept,
-          stage,
-          materials
+          stage, 
+          materials,
+          project_type: projectType // Added project type
         });
         
         if (projectData) {
@@ -196,21 +252,23 @@ const ProjectUpload: React.FC<ProjectUploadProps> = ({ studioName, onComplete })
           
           // Upload the project files
           await uploadProjectFiles(projectData.id);
-          
-          onComplete();
         }
-      } catch (error) {
-        console.error("Error saving project:", error);
-        toast({
-          title: "Error",
-          description: "Failed to save project",
-          variant: "destructive"
-        });
+      } else if (projectId) {
+        // If project already exists, just upload any new files
+        await uploadProjectFiles(projectId);
       }
-    } else if (projectId) {
-      // If project already exists, just upload any new files
-      await uploadProjectFiles(projectId);
+      
+      // Only call onComplete after all operations are successful
       onComplete();
+    } catch (error) {
+      console.error("Error saving project:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save project",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -219,7 +277,6 @@ const ProjectUpload: React.FC<ProjectUploadProps> = ({ studioName, onComplete })
     
     if (filesToUpload.length === 0) return;
     
-    setIsSaving(true);
     toast({
       title: "Uploading files",
       description: "Your project files are being uploaded"
@@ -249,8 +306,7 @@ const ProjectUpload: React.FC<ProjectUploadProps> = ({ studioName, onComplete })
         description: "Failed to upload some files",
         variant: "destructive"
       });
-    } finally {
-      setIsSaving(false);
+      throw error; // Re-throw to handle in the calling function
     }
   };
 
@@ -269,9 +325,9 @@ const ProjectUpload: React.FC<ProjectUploadProps> = ({ studioName, onComplete })
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-semibold">{projectName}</h3>
             <CollapsibleTrigger asChild>
-              <Button variant="ghost" size="sm" className="flex items-center gap-1">
-                <Info className="w-4 h-4" />
-                <span>{showDetails ? "Hide Details" : "Project Details"}</span>
+              <Button variant="outline" size="sm" className="flex items-center gap-1 border-formaflow-purple text-formaflow-purple hover:bg-formaflow-purple/10">
+                <Edit className="w-4 h-4" />
+                <span>{showDetails ? "Hide Details" : "Add Project Details"}</span>
               </Button>
             </CollapsibleTrigger>
           </div>
@@ -290,6 +346,8 @@ const ProjectUpload: React.FC<ProjectUploadProps> = ({ studioName, onComplete })
               setStage={setStage}
               materials={materials}
               setMaterials={setMaterials}
+              projectType={projectType} // Pass project type
+              setProjectType={setProjectType} // Pass project type setter
               docName={docName}
               handleDocumentUpload={handleDocumentUpload}
               onSave={handleSaveProjectDetails}
@@ -312,6 +370,8 @@ const ProjectUpload: React.FC<ProjectUploadProps> = ({ studioName, onComplete })
             files={getFilesForPhase(currentPhase)}
             currentPhase={currentPhase}
             onFileChange={handleFileChange}
+            maxFiles={10}
+            remainingFiles={10 - getFilesForPhase(currentPhase).length}
           />
         </div>
         

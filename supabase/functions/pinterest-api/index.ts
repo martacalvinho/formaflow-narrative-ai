@@ -23,7 +23,10 @@ serve(async (req) => {
       const mockBoards = [
         { id: 'architecture-inspiration', name: 'Architecture Inspiration', pin_count: 54 },
         { id: 'material-studies', name: 'Material Studies', pin_count: 28 },
-        { id: 'urban-renewal', name: 'Urban Renewal Projects', pin_count: 36 }
+        { id: 'urban-renewal', name: 'Urban Renewal Projects', pin_count: 36 },
+        { id: 'residential-projects', name: 'Residential Projects', pin_count: 42 },
+        { id: 'commercial-spaces', name: 'Commercial Spaces', pin_count: 23 },
+        { id: 'cultural-buildings', name: 'Cultural Buildings', pin_count: 19 }
       ];
       
       return new Response(JSON.stringify({ boards: mockBoards }), {
@@ -39,9 +42,22 @@ serve(async (req) => {
         { id: 'pin4', image_url: 'https://images.unsplash.com/photo-1600585154526-990dced4db3d', title: 'Material Contrast' },
         { id: 'pin5', image_url: 'https://images.unsplash.com/photo-1601760561441-16420502c7e0', title: 'Open Plan Concept' },
         { id: 'pin6', image_url: 'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0', title: 'Circulation Study' },
+        { id: 'pin7', image_url: 'https://images.unsplash.com/photo-1555636222-cae831e670b3', title: 'Minimalist Interior' },
+        { id: 'pin8', image_url: 'https://images.unsplash.com/photo-1486304873000-235643847519', title: 'Concept Sketching' },
+        { id: 'pin9', image_url: 'https://images.unsplash.com/photo-1618221469555-7f3ad97540d6', title: 'Material Palette' }
       ];
       
       return new Response(JSON.stringify({ pins: mockPins }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    else if (action === 'authStatus') {
+      // For demo purposes, we'll simulate that the user is authenticated
+      return new Response(JSON.stringify({ 
+        authenticated: true,
+        username: "demo_user",
+        avatar: "https://images.unsplash.com/photo-1511367461989-f85a21fda167?w=50&h=50",
+      }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }

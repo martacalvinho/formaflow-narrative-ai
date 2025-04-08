@@ -18,6 +18,7 @@ export interface Project {
   concept?: string;
   stage: string;
   materials?: string;
+  project_type?: string; // Added project type field
   created_at: string;
 }
 

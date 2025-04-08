@@ -7,12 +7,16 @@ interface FileUploaderProps {
   files: any[];
   currentPhase: string;
   onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  maxFiles?: number;
+  remainingFiles?: number;
 }
 
 const FileUploader: React.FC<FileUploaderProps> = ({ 
   files, 
   currentPhase, 
-  onFileChange 
+  onFileChange,
+  maxFiles = 10,
+  remainingFiles = 10
 }) => {
   const hasFiles = files.length > 0;
   
@@ -22,9 +26,12 @@ const FileUploader: React.FC<FileUploaderProps> = ({
         <h3 className="text-lg font-semibold">
           {currentPhase.charAt(0).toUpperCase() + currentPhase.slice(1)} Files
         </h3>
-        <label htmlFor="file-upload" className="btn-secondary flex items-center gap-2 cursor-pointer text-sm py-2">
+        <label 
+          htmlFor="file-upload" 
+          className={`btn-secondary flex items-center gap-2 cursor-pointer text-sm py-2 ${remainingFiles === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
           <Plus className="w-4 h-4" />
-          <span>Add Files</span>
+          <span>{remainingFiles === 0 ? "Limit Reached" : "Add Files"}</span>
           <input 
             type="file" 
             id="file-upload" 
@@ -32,9 +39,16 @@ const FileUploader: React.FC<FileUploaderProps> = ({
             accept="image/*" 
             className="hidden" 
             onChange={onFileChange}
+            disabled={remainingFiles === 0}
           />
         </label>
       </div>
+      
+      {remainingFiles < maxFiles && (
+        <div className="mb-4 text-sm text-gray-500">
+          <p>{remainingFiles} of {maxFiles} slots remaining</p>
+        </div>
+      )}
       
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
         {hasFiles ? (
@@ -59,6 +73,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
                 id="empty-upload" 
                 className="hidden" 
                 onChange={onFileChange}
+                disabled={remainingFiles === 0}
               />
             </label>
           </div>

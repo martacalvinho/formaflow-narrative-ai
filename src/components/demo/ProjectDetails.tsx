@@ -20,6 +20,8 @@ interface ProjectDetailsProps {
   setStage: (stage: string) => void;
   materials: string;
   setMaterials: (materials: string) => void;
+  projectType: string; // New project type field
+  setProjectType: (type: string) => void; // New project type setter
   docName: string | null;
   handleDocumentUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSave: () => void;
@@ -39,6 +41,8 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({
   setStage,
   materials,
   setMaterials,
+  projectType,
+  setProjectType,
   docName,
   handleDocumentUpload,
   onSave,
@@ -54,6 +58,29 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({
           onChange={(e) => setProjectName(e.target.value)}
           placeholder="e.g., Urban Loft Conversion"
         />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="projectType">Project Type</Label>
+        <Select value={projectType} onValueChange={setProjectType}>
+          <SelectTrigger id="projectType">
+            <SelectValue placeholder="Select project type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="residential">Residential</SelectItem>
+            <SelectItem value="commercial">Commercial</SelectItem>
+            <SelectItem value="educational">Educational</SelectItem>
+            <SelectItem value="cultural">Cultural</SelectItem>
+            <SelectItem value="hospitality">Hospitality</SelectItem>
+            <SelectItem value="healthcare">Healthcare</SelectItem>
+            <SelectItem value="mixed-use">Mixed-Use</SelectItem>
+            <SelectItem value="infrastructure">Infrastructure</SelectItem>
+            <SelectItem value="landscape">Landscape</SelectItem>
+            <SelectItem value="interior">Interior</SelectItem>
+            <SelectItem value="urban-planning">Urban Planning</SelectItem>
+            <SelectItem value="other">Other</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="space-y-2">

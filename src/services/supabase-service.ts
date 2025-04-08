@@ -60,6 +60,7 @@ export const saveProjectData = async (
     concept?: string;
     stage: string;
     materials?: string;
+    project_type?: string; // Added project type parameter
   }
 ) => {
   try {
@@ -72,7 +73,8 @@ export const saveProjectData = async (
         client: projectData.client || null,
         concept: projectData.concept || null,
         stage: projectData.stage,
-        materials: projectData.materials || null
+        materials: projectData.materials || null,
+        project_type: projectData.project_type || 'residential' // Add default if not provided
       })
       .select()
       .single();
