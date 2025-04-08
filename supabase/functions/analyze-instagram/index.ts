@@ -2,10 +2,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 
-// We'll use OpenAI for the analysis. Note: In a real implementation,
-// you would need to set up the OPENAI_API_KEY in your Supabase secrets.
-// const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -18,29 +14,42 @@ serve(async (req) => {
   }
 
   try {
-    const { instagramData, competitorUsernames } = await req.json();
+    const { instagramData, competitorUsernames, projectData, projectFiles } = await req.json();
+    
+    console.log("Analyzing Instagram data with project context:", {
+      instagram: instagramData?.username || "Not provided",
+      competitors: competitorUsernames || [],
+      projectName: projectData?.name || "Not provided",
+      filesCount: projectFiles?.length || 0
+    });
     
     // In a real implementation, this would make a request to the Instagram API
-    // and analyze the data with OpenAI. For demo purposes, we're returning mock data.
+    // and analyze the data with an AI. For now, we'll generate more tailored mock data
+    // based on the project information provided.
     
     // Simulate analysis time
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 1500));
     
-    // Generate mock analysis
+    // Use project info for more relevant analysis
+    const projectMaterials = projectData?.materials || "sustainable materials";
+    const projectName = projectData?.name || "architectural project";
+    const projectType = projectData?.project_type || "residential";
+    
+    // Generate analysis with project context
     const analysis = {
       contentRecommendations: [
-        "Focus on sharing more behind-the-scenes content of your design process",
-        "Create carousel posts that show the evolution of a project from concept to completion",
-        "Add technical details in your captions to engage industry professionals",
-        "Post on Thursdays at 7PM for optimal engagement based on your audience patterns"
+        `Focus on sharing more behind-the-scenes content of your ${projectName} design process`,
+        `Create carousel posts that show the evolution of ${projectName} from concept to completion`,
+        `Add technical details about ${projectMaterials} in your captions to engage industry professionals`,
+        `For ${projectType} projects like ${projectName}, Thursday evening posts receive the highest engagement`
       ],
       competitorInsights: competitorUsernames.map((username: string) => ({
         username,
         insights: [
           `@${username} gets higher engagement from posts featuring project process vs final result`,
           `@${username}'s carousel posts receive 35% more engagement than single images`,
-          `@${username} successfully uses storytelling captions to increase follower interactions`,
-          `@${username} posts most frequently on weekends with good results`
+          `@${username}'s content about ${projectMaterials} receives strong engagement from similar audiences`,
+          `@${username} posts most frequently on weekends with good results for ${projectType} projects`
         ]
       })),
       recommendations: {
@@ -51,9 +60,9 @@ serve(async (req) => {
         },
         contentThemes: [
           "Design Process & Evolution",
-          "Material Details & Techniques",
+          `${projectMaterials.charAt(0).toUpperCase() + projectMaterials.slice(1)} Details & Techniques`,
           "Space & Light Interactions",
-          "Sustainability Features"
+          `${projectType.charAt(0).toUpperCase() + projectType.slice(1)} Sustainability Features`
         ],
         postingSchedule: {
           optimalDays: ["Thursday", "Sunday"],

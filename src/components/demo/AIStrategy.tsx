@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight, Brain, ExternalLink } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from "@/integrations/supabase/client";
 import StrategyGenerator from './strategy/StrategyGenerator';
 import ContentCalendar from './strategy/ContentCalendar';
 import AICaptions from './strategy/AICaptions';
@@ -12,58 +13,85 @@ import CTACard from './strategy/CTACard';
 
 interface AIStrategyProps {
   studioName: string;
+  demoPin: string; // Added demoPin to the interface
 }
 
-const mockProjectImages = [
-  'https://images.unsplash.com/photo-1600585154340-be6161a56a0c',
-  'https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea',
-  'https://images.unsplash.com/photo-1600573472556-e636c2acda88',
-  'https://images.unsplash.com/photo-1600585154526-990dced4db3d',
-  'https://images.unsplash.com/photo-1601760561441-16420502c7e0'
-];
-
-const mockCalendar = [
-  { day: 'Monday', content: 'Concept Sketches', type: 'carousel', phase: 'concept' },
-  { day: 'Tuesday', content: null, type: null, phase: null },
-  { day: 'Wednesday', content: 'Design Evolution', type: 'image', phase: 'drawings' },
-  { day: 'Thursday', content: 'Material Studies', type: 'carousel', phase: 'construction' },
-  { day: 'Friday', content: 'Final Photography', type: 'image', phase: 'final' },
-  { day: 'Saturday', content: null, type: null, phase: null },
-  { day: 'Sunday', content: 'Weekly Inspiration', type: 'carousel', phase: 'inspiration' }
-];
-
-const mockCaptions = [
-  { 
-    image: mockProjectImages[0],
-    caption: "The journey of our Urban Loft project began with these initial concept sketches. We wanted to preserve the industrial character while bringing in natural light through strategic openings. #architecture #concept #design #urbanrenewal",
-    phase: 'concept'
-  },
-  { 
-    image: mockProjectImages[1],
-    caption: "Materials tell the story of a space. For this renovation, we chose a palette of concrete, reclaimed wood, and steel to honor the building's history while creating a warm, livable environment. Swipe to see the material evolution. #architecture #materiality #renovation",
-    phase: 'construction'
-  },
-  { 
-    image: mockProjectImages[2],
-    caption: "Light transforms space. The final photographs of our Urban Loft project capture how natural light interacts with the materials throughout the day, creating a constantly evolving atmosphere. #architecture #interiordesign #naturallighting",
-    phase: 'final'
-  }
-];
-
-const mockThemes = [
-  "Process Storytelling",
-  "Technical Thursdays", 
-  "Material Narratives",
-  "Studio Culture"
-];
-
-const AIStrategy: React.FC<AIStrategyProps> = ({ studioName }) => {
+const AIStrategy: React.FC<AIStrategyProps> = ({ studioName, demoPin }) => {
   const [generatingStrategy, setGeneratingStrategy] = useState(true);
   const [generationProgress, setGenerationProgress] = useState(0);
   const [selectedTab, setSelectedTab] = useState('calendar');
+  const [projectData, setProjectData] = useState<any>(null);
+  const [projectFiles, setProjectFiles] = useState<any[]>([]);
+  const [instagramData, setInstagramData] = useState<any>(null);
+  const [aiStrategy, setAiStrategy] = useState<any>({
+    calendar: [],
+    captions: [],
+    formats: { carousels: 60, images: 30, videos: 10 },
+    themes: []
+  });
   const { toast } = useToast();
 
+  // Load project and Instagram data when component mounts
   useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // First get studio ID using demo PIN
+        const { data: studioData } = await supabase
+          .from('studios')
+          .select('id')
+          .eq('demo_pin', demoPin)
+          .single();
+        
+        if (studioData) {
+          // Get the project data
+          const { data: projects } = await supabase
+            .from('projects')
+            .select('*')
+            .eq('studio_id', studioData.id)
+            .eq('demo_pin', demoPin);
+          
+          if (projects && projects.length > 0) {
+            const project = projects[0];
+            setProjectData(project);
+            
+            // Fetch project files
+            const { data: files } = await supabase
+              .from('project_files')
+              .select('*')
+              .eq('project_id', project.id);
+            
+            if (files && files.length > 0) {
+              setProjectFiles(files);
+              console.log(`Found ${files.length} files for project analysis`);
+            }
+            
+            // Get Instagram data
+            const { data: instagram } = await supabase
+              .from('instagram_accounts')
+              .select('*')
+              .eq('demo_pin', demoPin)
+              .order('created_at', { ascending: false })
+              .limit(1);
+              
+            if (instagram && instagram.length > 0) {
+              setInstagramData(instagram[0]);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching project data:", error);
+      }
+    };
+    
+    if (demoPin) {
+      fetchData();
+    }
+  }, [demoPin]);
+
+  // Generate AI strategy
+  useEffect(() => {
+    if (!projectData || !projectFiles.length) return;
+    
     // Simulate AI generation progress
     const interval = setInterval(() => {
       setGenerationProgress(prev => {
@@ -71,7 +99,7 @@ const AIStrategy: React.FC<AIStrategyProps> = ({ studioName }) => {
         if (newProgress >= 100) {
           clearInterval(interval);
           setTimeout(() => {
-            setGeneratingStrategy(false);
+            generateAIStrategy();
           }, 500);
           return 100;
         }
@@ -80,7 +108,72 @@ const AIStrategy: React.FC<AIStrategyProps> = ({ studioName }) => {
     }, 200);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [projectData, projectFiles]);
+  
+  const generateAIStrategy = async () => {
+    try {
+      // Call the ai-strategy edge function
+      const response = await fetch('/api/ai-strategy', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          projectData,
+          instagramData,
+          projectFiles
+        })
+      });
+      
+      const strategyData = await response.json();
+      
+      // Create captions with actual project images
+      const captions = projectFiles.length > 0 
+        ? projectFiles.slice(0, 3).map(file => ({
+            image: file.file_url,
+            caption: strategyData.captions ? 
+              strategyData.captions.find((c: any) => c.phase === file.phase)?.caption || 
+              `This ${file.phase} phase of our ${projectData.name} project highlights our approach to design using ${projectData.materials || 'quality materials'}.` : 
+              `This ${file.phase} phase of our ${projectData.name} project highlights our approach to design.`,
+            phase: file.phase
+          }))
+        : strategyData.captions || [];
+      
+      // Update AI strategy with the generated data and project files
+      setAiStrategy({
+        calendar: strategyData.calendar || [],
+        captions,
+        formats: strategyData.formats || { carousels: 60, images: 30, videos: 10 },
+        themes: strategyData.themes || [
+          "Process Storytelling",
+          "Technical Thursdays", 
+          "Material Narratives",
+          "Studio Culture"
+        ]
+      });
+      
+      // Store the strategy in Supabase
+      if (projectData && projectData.id) {
+        await supabase
+          .from('content_strategies')
+          .upsert({
+            project_id: projectData.id,
+            instagram_account_id: instagramData?.id || null,
+            calendar: strategyData.calendar,
+            captions: strategyData.captions,
+            formats: strategyData.formats,
+            themes: strategyData.themes,
+            demo_pin: demoPin
+          });
+      }
+      
+      setGeneratingStrategy(false);
+    } catch (error) {
+      console.error("Error generating AI strategy:", error);
+      // Fall back to mock data if the API call fails
+      setGeneratingStrategy(false);
+    }
+  };
 
   const handleCopyCaption = (caption: string) => {
     navigator.clipboard.writeText(caption);
@@ -120,6 +213,23 @@ const AIStrategy: React.FC<AIStrategyProps> = ({ studioName }) => {
           </div>
         </div>
         
+        {demoPin && (
+          <div className="mb-4 text-center">
+            <span className="text-sm bg-formaflow-purple/10 text-formaflow-purple font-medium px-3 py-1 rounded-full">
+              Demo PIN: {demoPin}
+            </span>
+          </div>
+        )}
+        
+        {projectData && (
+          <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+            <p className="text-sm font-medium">Project: {projectData.name}</p>
+            <p className="text-xs text-gray-500">
+              {projectFiles.length} files analyzed from concept to completion
+            </p>
+          </div>
+        )}
+        
         <Tabs defaultValue="calendar" className="mb-6" onValueChange={setSelectedTab}>
           <TabsList className="grid grid-cols-3 mb-6">
             <TabsTrigger value="calendar">
@@ -135,22 +245,22 @@ const AIStrategy: React.FC<AIStrategyProps> = ({ studioName }) => {
           
           <TabsContent value="calendar">
             <ContentCalendar 
-              calendar={mockCalendar}
+              calendar={aiStrategy.calendar}
               onExport={handleDownloadStrategy}
             />
           </TabsContent>
           
           <TabsContent value="captions">
             <AICaptions 
-              captions={mockCaptions}
+              captions={aiStrategy.captions}
               onCopyCaption={handleCopyCaption}
             />
           </TabsContent>
           
           <TabsContent value="formats">
             <ContentFormats 
-              formats={{ carousels: 60, images: 30, videos: 10 }}
-              themes={mockThemes}
+              formats={aiStrategy.formats}
+              themes={aiStrategy.themes}
             />
           </TabsContent>
         </Tabs>

@@ -1,7 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { v4 as uuidv4 } from "uuid";
-import { Studio, Project, ProjectFile, InstagramAccount, Competitor, ContentStrategy } from "@/types/supabase";
 
 // Generate a unique demo PIN for tracking the demo session
 export const generateDemoPin = (): string => {
@@ -80,11 +79,10 @@ export const saveStudioData = async (studioData: {
           demo_pin: demoPin // Ensure the demo_pin is set
         })
         .eq('id', existingStudio.id)
-        .select()
-        .single();
+        .select();
       
       if (error) throw error;
-      return data as Studio;
+      return data[0];
     } else {
       // Create new studio
       const { data, error } = await supabase
@@ -96,11 +94,10 @@ export const saveStudioData = async (studioData: {
           logo_url: logoUrl,
           demo_pin: demoPin // Set the demo_pin
         })
-        .select()
-        .single();
+        .select();
       
       if (error) throw error;
-      return data as Studio;
+      return data[0];
     }
   } catch (error) {
     console.error("Error saving studio data:", error);
@@ -164,15 +161,14 @@ export const saveProjectData = async (
           demo_pin: demoPin // Ensure the demo_pin is set
         })
         .eq('id', existingProject.id)
-        .select()
-        .single();
+        .select();
       
       if (error) {
         console.error("Error updating project:", error);
         throw error;
       }
       
-      return data as Project;
+      return data[0];
     } else {
       // Create new project
       const { data, error } = await supabase
@@ -188,15 +184,14 @@ export const saveProjectData = async (
           project_type: projectData.project_type || 'residential',
           demo_pin: demoPin // Set the demo_pin
         })
-        .select()
-        .single();
+        .select();
       
       if (error) {
         console.error("Error creating project:", error);
         throw error;
       }
       
-      return data as Project;
+      return data[0];
     }
   } catch (error) {
     console.error("Error saving project data:", error);
@@ -235,11 +230,10 @@ export const saveProjectFile = async (
         file_url: publicUrl,
         phase: phase
       })
-      .select()
-      .single();
+      .select();
     
     if (error) throw error;
-    return data as ProjectFile;
+    return data[0];
   } catch (error) {
     console.error("Error saving project file:", error);
     throw error;
@@ -281,14 +275,14 @@ export const saveInstagramData = async (
           engagement: instagramData.engagement,
           top_posts: instagramData.topPosts,
           post_types: instagramData.postTypes,
-          post_timing: instagramData.postTiming
+          post_timing: instagramData.postTiming,
+          demo_pin: demoPin
         })
         .eq('id', existingAccounts[0].id)
-        .select()
-        .single();
+        .select();
       
       if (error) throw error;
-      return data as InstagramAccount;
+      return data[0];
     } else {
       // Create new account
       const { data, error } = await supabase
@@ -303,11 +297,10 @@ export const saveInstagramData = async (
           post_timing: instagramData.postTiming,
           demo_pin: demoPin // Set the demo_pin
         })
-        .select()
-        .single();
+        .select();
       
       if (error) throw error;
-      return data as InstagramAccount;
+      return data[0];
     }
   } catch (error) {
     console.error("Error saving Instagram data:", error);
@@ -339,11 +332,10 @@ export const saveCompetitorAnalysis = async (
           insights
         })
         .eq('id', existingCompetitors[0].id)
-        .select()
-        .single();
+        .select();
       
       if (error) throw error;
-      return data as Competitor;
+      return data[0];
     } else {
       // Create new competitor
       const { data, error } = await supabase
@@ -353,11 +345,10 @@ export const saveCompetitorAnalysis = async (
           competitor_username: competitorUsername,
           insights
         })
-        .select()
-        .single();
+        .select();
       
       if (error) throw error;
-      return data as Competitor;
+      return data[0];
     }
   } catch (error) {
     console.error("Error saving competitor analysis:", error);
@@ -401,11 +392,10 @@ export const saveContentStrategy = async (
           themes: strategy.themes
         })
         .eq('id', existingStrategies[0].id)
-        .select()
-        .single();
+        .select();
       
       if (error) throw error;
-      return data as ContentStrategy;
+      return data[0];
     } else {
       // Create new strategy
       const { data, error } = await supabase
@@ -419,11 +409,10 @@ export const saveContentStrategy = async (
           themes: strategy.themes,
           demo_pin: demoPin // Set the demo_pin
         })
-        .select()
-        .single();
+        .select();
       
       if (error) throw error;
-      return data as ContentStrategy;
+      return data[0];
     }
   } catch (error) {
     console.error("Error saving content strategy:", error);
@@ -432,7 +421,7 @@ export const saveContentStrategy = async (
 };
 
 // Get Studio by Demo PIN
-export const getStudioByDemoPin = async (demoPin: string): Promise<Studio | null> => {
+export const getStudioByDemoPin = async (demoPin: string) => {
   try {
     const { data, error } = await supabase
       .from('studios')
@@ -440,17 +429,13 @@ export const getStudioByDemoPin = async (demoPin: string): Promise<Studio | null
       .eq('demo_pin', demoPin)
       .order('created_at', { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
     
     if (error) {
-      if (error.code === 'PGRST116') {
-        // No data found
-        return null;
-      }
       throw error;
     }
     
-    return data as Studio;
+    return data;
   } catch (error) {
     console.error("Error getting studio by demo PIN:", error);
     return null;
@@ -458,7 +443,7 @@ export const getStudioByDemoPin = async (demoPin: string): Promise<Studio | null
 };
 
 // Get Project by Studio ID and Demo PIN
-export const getProjectByStudioIdAndDemoPin = async (studioId: string, demoPin: string): Promise<Project | null> => {
+export const getProjectByStudioIdAndDemoPin = async (studioId: string, demoPin: string) => {
   try {
     const { data, error } = await supabase
       .from('projects')
@@ -467,17 +452,13 @@ export const getProjectByStudioIdAndDemoPin = async (studioId: string, demoPin: 
       .eq('demo_pin', demoPin)
       .order('created_at', { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
     
     if (error) {
-      if (error.code === 'PGRST116') {
-        // No data found
-        return null;
-      }
       throw error;
     }
     
-    return data as Project;
+    return data;
   } catch (error) {
     console.error("Error getting project by studio ID and demo PIN:", error);
     return null;

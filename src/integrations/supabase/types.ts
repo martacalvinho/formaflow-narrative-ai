@@ -165,6 +165,7 @@ export type Database = {
           client: string | null
           concept: string | null
           created_at: string
+          demo_pin: string | null
           id: string
           location: string | null
           materials: string | null
@@ -177,6 +178,7 @@ export type Database = {
           client?: string | null
           concept?: string | null
           created_at?: string
+          demo_pin?: string | null
           id?: string
           location?: string | null
           materials?: string | null
@@ -189,6 +191,7 @@ export type Database = {
           client?: string | null
           concept?: string | null
           created_at?: string
+          demo_pin?: string | null
           id?: string
           location?: string | null
           materials?: string | null
@@ -210,6 +213,7 @@ export type Database = {
       studios: {
         Row: {
           created_at: string
+          demo_pin: string | null
           id: string
           logo_url: string | null
           name: string
@@ -218,6 +222,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          demo_pin?: string | null
           id?: string
           logo_url?: string | null
           name: string
@@ -226,6 +231,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          demo_pin?: string | null
           id?: string
           logo_url?: string | null
           name?: string
