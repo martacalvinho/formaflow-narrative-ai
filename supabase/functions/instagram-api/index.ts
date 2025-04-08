@@ -1,230 +1,240 @@
+import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
+import { corsHeaders } from '../_shared/cors.ts';
 
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+console.log('Instagram API function starting...');
 
-// Instagram API credentials
-const INSTAGRAM_ACCESS_TOKEN = Deno.env.get('INSTAGRAM_ACCESS_TOKEN') || 'IGAAS9GW3RO6tBZAE1hVEZArcElXSFpjeEhSR2pKUVdFcGFfQ0N5RkpwSGJXYjFlSFJfdFNKMlc1TFBEaWd4SWZAnNXV4VlJ4OVdHQzgwWE03QlZATR0haczdqd0U0ZAEtxVHdhLXJUSV83YS1zUkVzUDhsSVY1Q2ZAaMHN4T2c2RTluawZDZD';
-const INSTAGRAM_USER_ID = '17841401331403029'; // Demo account
+// --- Environment Variables ---
+// Ensure these are set in your Supabase project settings for this function
+const INSTAGRAM_ACCESS_TOKEN = Deno.env.get('INSTAGRAM_ACCESS_TOKEN');
+const INSTAGRAM_USER_ID = Deno.env.get('INSTAGRAM_USER_ID') || '17841401331403029'; // Default or fetched from ENV
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+if (!INSTAGRAM_ACCESS_TOKEN) {
+  console.error("FATAL: INSTAGRAM_ACCESS_TOKEN environment variable not set.");
+  // In a real scenario, you might want to prevent the function from serving
+  // or return an error immediately, but for now, we'll let it proceed
+  // and potentially fail during the fetch calls.
+}
 
-serve(async (req) => {
+serve(async (req: Request) => {
+  console.log('Handling request:', req.method, req.url);
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    console.log('Handling OPTIONS request');
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    const { action, username } = await req.json();
-    
+    // --- Get Action and Parameters ---
+    const url = new URL(req.url);
+    const action = url.searchParams.get('action');
+    const username = url.searchParams.get('username') || 'demo_pin'; // Fallback username
+
+    console.log(`Action: ${action}, Username: ${username}`);
+
+    if (!action) {
+      console.error('Action parameter is missing');
+      return new Response(JSON.stringify({ error: 'Action parameter is required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // --- Action: Get User Profile ---
     if (action === 'getUserProfile') {
-      // Mock data for the demo
+      console.log('Action: getUserProfile');
+
+      if (!INSTAGRAM_ACCESS_TOKEN) {
+        console.error('getUserProfile: INSTAGRAM_ACCESS_TOKEN missing.');
+        throw new Error('Instagram Access Token not configured.');
+      }
+
+      const userIdToFetch = INSTAGRAM_USER_ID;
+      const profileFields = 'id,username,account_type,media_count'; // Basic fields, add followers_count if permission granted
+      const profileUrl = `https://graph.facebook.com/v19.0/${userIdToFetch}?fields=${profileFields}&access_token=${INSTAGRAM_ACCESS_TOKEN}`;
+
+      console.log(`Fetching profile from: ${profileUrl.replace(INSTAGRAM_ACCESS_TOKEN, '********')}`); // Avoid logging token
+
+      const profileResponse = await fetch(profileUrl);
+      if (!profileResponse.ok) {
+        const errorText = await profileResponse.text();
+        console.error(`Instagram API Error (Profile - ${profileResponse.status}): ${errorText}`);
+        throw new Error(`Failed to fetch Instagram profile: ${profileResponse.statusText} - ${errorText}`);
+      }
+      const profileApiData = await profileResponse.json();
+      console.log("Raw Profile API Data:", profileApiData);
+
+
+      // --- Handle Followers Count ---
+      // TODO: Fetch Followers Count Separately if needed & permission exists.
+      // The 'followers_count' field requires higher permissions.
+      // Assuming 5284 as a fallback for now.
+      const followersCount = profileApiData.followers_count || 5284;
+
+      // Format the data for your frontend
       const userData = {
-        username: username || 'martacalvinho',
-        followers: 5284,
-        posts: 158,
-        engagement: 4.3,
-        bio: 'Architecture & Interior Design Studio | Lisbon, Portugal'
+        username: profileApiData.username || username, // Fallback to input username if API one is missing
+        followers: followersCount,
+        posts: profileApiData.media_count || 158, // Fallback
       };
-      
+
+      console.log("Formatted User Profile Data:", userData);
       return new Response(JSON.stringify(userData), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
       });
-    } 
+    }
+
+    // --- Action: Get Posts & Analytics ---
     else if (action === 'getPosts') {
-      // For the demo, we'll use mock data instead of real API calls
-      const mockPosts = [
-        {
-          id: 'post1',
-          image_url: 'https://images.unsplash.com/photo-1600607687920-4e2a09cf159d',
-          caption: 'Light study for our latest residential project #architecture #interiordesign',
-          likes: 328,
-          comments: 24,
-          timestamp: '2023-01-15T09:23:00Z',
-          type: 'image'
-        },
-        {
-          id: 'post2',
-          image_url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c',
-          caption: 'Materials exploration for the urban loft project. Combining concrete and wood creates a stunning contrast.',
-          likes: 452,
-          comments: 41,
-          timestamp: '2023-02-03T14:15:00Z',
-          type: 'carousel'
-        },
-        {
-          id: 'post3',
-          image_url: 'https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea',
-          caption: 'Site visit at our current construction project. Progress is looking good!',
-          likes: 197,
-          comments: 15,
-          timestamp: '2023-02-10T11:30:00Z',
-          type: 'image'
-        },
-        {
-          id: 'post4',
-          image_url: 'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3',
-          caption: 'Model making in the studio today. Getting ready for client presentation tomorrow.',
-          likes: 384,
-          comments: 32,
-          timestamp: '2023-02-20T16:45:00Z',
-          type: 'image'
-        },
-        {
-          id: 'post5',
-          image_url: 'https://images.unsplash.com/photo-1600607687939-ce8a6c349279',
-          caption: 'Final photos of the completed Riverside House project.',
-          likes: 723,
-          comments: 89,
-          timestamp: '2023-03-05T10:20:00Z',
-          type: 'carousel'
-        },
-        {
-          id: 'post6',
-          image_url: 'https://images.unsplash.com/photo-1600607687644-c7531e71d2e3',
-          caption: 'Behind the scenes: Construction phase of our latest commercial project.',
-          likes: 251,
-          comments: 18,
-          timestamp: '2023-03-15T13:40:00Z',
-          type: 'video'
-        },
-        {
-          id: 'post7',
-          image_url: 'https://images.unsplash.com/photo-1600607688066-89c6a7272f2e',
-          caption: 'Sketching session with the team. Many ideas for the new cultural center.',
-          likes: 302,
-          comments: 27,
-          timestamp: '2023-03-22T15:10:00Z',
-          type: 'image'
-        },
-        {
-          id: 'post8',
-          image_url: 'https://images.unsplash.com/photo-1600607688066-89c6a7272f2e',
-          caption: 'Concept development for a sustainable housing project #sustainability',
-          likes: 415,
-          comments: 36,
-          timestamp: '2023-04-01T09:30:00Z',
-          type: 'image'
-        },
-        {
-          id: 'post9',
-          image_url: 'https://images.unsplash.com/photo-1531835551805-16d864c8d311',
-          caption: 'Exploring the relationship between interior spaces and natural light',
-          likes: 518,
-          comments: 45,
-          timestamp: '2023-04-10T11:15:00Z',
-          type: 'carousel'
-        },
-        {
-          id: 'post10',
-          image_url: 'https://images.unsplash.com/photo-1600585154526-990dced4db3d',
-          caption: 'Material selections for our luxury apartment renovation',
-          likes: 289,
-          comments: 22,
-          timestamp: '2023-04-18T14:50:00Z',
-          type: 'image'
-        },
-        {
-          id: 'post11',
-          image_url: 'https://images.unsplash.com/photo-1600585154363-67eb9e2e2099',
-          caption: 'Urban context analysis for our new city center project',
-          likes: 345,
-          comments: 31,
-          timestamp: '2023-04-27T16:20:00Z',
-          type: 'image'
-        },
-        {
-          id: 'post12',
-          image_url: 'https://images.unsplash.com/photo-1600573472432-27195c041e5f',
-          caption: 'Office tour: Our newly designed studio space is finally complete!',
-          likes: 632,
-          comments: 74,
-          timestamp: '2023-05-05T10:40:00Z',
-          type: 'video'
+      console.log('Action: getPosts');
+
+      if (!INSTAGRAM_ACCESS_TOKEN) {
+        console.error('getPosts: INSTAGRAM_ACCESS_TOKEN missing.');
+        throw new Error('Instagram Access Token not configured.');
+      }
+
+      const userIdToFetch = INSTAGRAM_USER_ID;
+      const mediaFields = 'id,caption,media_type,media_url,thumbnail_url,timestamp,like_count,comments_count,children{media_url,media_type,thumbnail_url}'; // Added thumbnail_url for children
+      const mediaUrl = `https://graph.facebook.com/v19.0/${userIdToFetch}/media?fields=${mediaFields}&access_token=${INSTAGRAM_ACCESS_TOKEN}&limit=25`; // Get more posts
+
+      console.log(`Fetching media from: ${mediaUrl.replace(INSTAGRAM_ACCESS_TOKEN, '********')}`); // Avoid logging token
+
+      const mediaResponse = await fetch(mediaUrl);
+      if (!mediaResponse.ok) {
+        const errorText = await mediaResponse.text();
+        console.error(`Instagram API Error (Media - ${mediaResponse.status}): ${errorText}`);
+        throw new Error(`Failed to fetch Instagram media: ${mediaResponse.statusText} - ${errorText}`);
+      }
+      const mediaApiData = await mediaResponse.json();
+      const postsRaw: any[] = mediaApiData.data || []; // Ensure type safety
+      console.log(`Raw Media API Data Received: ${postsRaw.length} posts`);
+
+
+      // --- Process Posts and Calculate Analytics ---
+      let imageCount = 0;
+      let carouselCount = 0;
+      let videoCount = 0;
+      let totalLikes = 0;
+      let totalComments = 0;
+
+      const processedPosts = postsRaw.map((post: any) => {
+        totalLikes += post.like_count || 0;
+        totalComments += post.comments_count || 0;
+
+        let imageUrl = post.media_url;
+        // Determine image URL based on type
+        if (post.media_type === 'VIDEO') {
+          imageUrl = post.thumbnail_url || '/placeholder.svg'; // Use video thumbnail
+          videoCount++;
+        } else if (post.media_type === 'CAROUSEL_ALBUM') {
+          // Use the first child's media URL or thumbnail URL
+          const firstChild = post.children?.data?.[0];
+          if (firstChild) {
+            imageUrl = (firstChild.media_type === 'VIDEO' ? firstChild.thumbnail_url : firstChild.media_url) || post.media_url || '/placeholder.svg';
+          } else {
+            imageUrl = '/placeholder.svg'; // Fallback if no children data
+          }
+          carouselCount++;
+        } else { // IMAGE
+          imageCount++;
+          imageUrl = post.media_url || '/placeholder.svg';
         }
-      ];
-      
-      // Analytics 
-      const postTypes = {
-        image: 8,
-        carousel: 3,
-        video: 2
+
+
+        return {
+          id: post.id,
+          imageUrl: imageUrl,
+          caption: post.caption || '',
+          likes: post.like_count || 0,
+          comments: post.comments_count || 0,
+          timestamp: post.timestamp,
+          type: post.media_type,
+        };
+        // Sort by engagement (higher engagement first)
+      }).sort((a: any, b: any) => (b.likes + b.comments) - (a.likes + a.comments));
+
+      const totalPosts = imageCount + carouselCount + videoCount;
+      console.log(`Post Type Counts: Images=${imageCount}, Carousels=${carouselCount}, Videos=${videoCount}, Total=${totalPosts}`);
+      console.log(`Total Engagement: Likes=${totalLikes}, Comments=${totalComments}`);
+
+
+      // Calculate Post Type Percentages
+      let postTypesPercentage = { images: 0, carousels: 0, videos: 0 };
+      if (totalPosts > 0) {
+        postTypesPercentage = {
+          images: Math.round((imageCount / totalPosts) * 100),
+          carousels: Math.round((carouselCount / totalPosts) * 100),
+          videos: Math.round((videoCount / totalPosts) * 100),
+        };
+
+         // Normalize percentages to sum to 100 (due to rounding)
+        let sum = postTypesPercentage.images + postTypesPercentage.carousels + postTypesPercentage.videos;
+        if (sum !== 100 && sum > 0) { // Avoid adjusting if sum is 0
+            const diff = 100 - sum;
+            // Add difference to the largest category (simple normalization)
+             if (postTypesPercentage.images >= postTypesPercentage.carousels && postTypesPercentage.images >= postTypesPercentage.videos) postTypesPercentage.images += diff;
+             else if (postTypesPercentage.carousels >= postTypesPercentage.images && postTypesPercentage.carousels >= postTypesPercentage.videos) postTypesPercentage.carousels += diff;
+             else postTypesPercentage.videos += diff;
+            // Ensure no category goes below 0 after adjustment (edge case)
+             postTypesPercentage.images = Math.max(0, postTypesPercentage.images);
+             postTypesPercentage.carousels = Math.max(0, postTypesPercentage.carousels);
+             postTypesPercentage.videos = Math.max(0, postTypesPercentage.videos);
+            // Final check for 100% sum after normalization
+             sum = postTypesPercentage.images + postTypesPercentage.carousels + postTypesPercentage.videos;
+             if (sum !== 100 && totalPosts > 0) { // If still not 100, add leftover to the first non-zero category
+                 const finalDiff = 100 - sum;
+                 if (postTypesPercentage.images > 0) postTypesPercentage.images += finalDiff;
+                 else if (postTypesPercentage.carousels > 0) postTypesPercentage.carousels += finalDiff;
+                 else if (postTypesPercentage.videos > 0) postTypesPercentage.videos += finalDiff;
+             }
+        }
+      }
+
+      // --- TODO: Implement Engagement Rate and Post Timing Analysis ---
+      // Basic Engagement Calculation (Example: average per post, requires follower count)
+      // const followersCount = ??? // Need followers from getUserProfile or passed differently
+      // const engagementRate = totalPosts > 0 && followersCount > 0 ? (((totalLikes + totalComments) / totalPosts) / followersCount) * 100 : 0;
+
+      // Simple Post Timing Analysis Placeholder
+      // const postTiming = analyzePostTimestamps(postsRaw); // Implement this helper
+      const postTimingPlaceholder = { weekday: 'Thursday', time: '7PM' };
+
+      const analytics = {
+        postTypes: postTypesPercentage,
+        postTiming: postTimingPlaceholder,
+        // engagementRate: engagementRate ? engagementRate.toFixed(1) : 'N/A' // Requires followers
+        avgLikes: totalPosts > 0 ? Math.round(totalLikes / totalPosts) : 0,
+        avgComments: totalPosts > 0 ? Math.round(totalComments / totalPosts) : 0,
       };
-      
-      const postTiming = {
-        weekdays: {
-          Monday: 2,
-          Tuesday: 3,
-          Wednesday: 1,
-          Thursday: 2,
-          Friday: 3,
-          Saturday: 1,
-          Sunday: 0
-        },
-        times: {
-          morning: 5,
-          afternoon: 7,
-          evening: 0
-        }
-      };
-      
-      return new Response(JSON.stringify({ 
-        posts: mockPosts,
-        analytics: {
-          postTypes,
-          postTiming
-        }
+
+      console.log("Calculated Analytics:", analytics);
+      console.log(`Returning ${Math.min(processedPosts.length, 12)} posts for display.`);
+
+      return new Response(JSON.stringify({
+        posts: processedPosts.slice(0, 12), // Return top 12 for display
+        analytics: analytics,
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
       });
     }
-    else if (action === 'getCompetitors') {
-      // Mock competitor data
-      const competitors = [
-        {
-          username: 'studioarchitectura',
-          followers: 12500,
-          posts: 320,
-          engagement: 6.2,
-          topPostTypes: { image: 60, carousel: 35, video: 5 },
-          postFrequency: 'Daily'
-        },
-        {
-          username: 'modernspaces',
-          followers: 8700,
-          posts: 215,
-          engagement: 5.1,
-          topPostTypes: { image: 45, carousel: 40, video: 15 },
-          postFrequency: '3-4 per week'
-        },
-        {
-          username: 'designatelier',
-          followers: 15300,
-          posts: 412,
-          engagement: 7.8,
-          topPostTypes: { image: 30, carousel: 50, video: 20 },
-          postFrequency: '5 per week'
-        }
-      ];
-      
-      return new Response(JSON.stringify({ competitors }), {
+
+    // --- Unknown Action ---
+    else {
+      console.warn(`Unknown action received: ${action}`);
+      return new Response(JSON.stringify({ error: `Unknown action: ${action}` }), {
+        status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-    
-    return new Response(JSON.stringify({ error: 'Invalid action' }), {
-      status: 400,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
   } catch (error) {
-    console.error('Error in instagram-api function:', error);
-    
+    console.error('Error processing request:', error);
     return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 500, // Internal Server Error
     });
   }
 });
+
+console.log('Instagram API function initialized.');
